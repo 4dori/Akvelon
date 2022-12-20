@@ -1,5 +1,6 @@
 ﻿using Akvelon.Data;
 using Akvelon.Models;
+using Akvelon.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Validations.Rules;
@@ -90,10 +91,9 @@ namespace Akvelon.Controllers
                 // Checking for any Tasks in Project to delete them too
                 if (project.TasksIds.Any())
                 {
-                    foreach (var i in project.TasksIds.Split(", ").ToList())
+                    foreach (var i in ConverterService.StringToListId(project.TasksIds))
                     {
-                        Guid newGuid = Guid.Parse(i);
-                        var task = await tasksDbContext.Tasks.FindAsync(newGuid);
+                        var task = await tasksDbContext.Tasks.FindAsync(i);
                         tasksDbContext.Remove(task);
                     }
                     tasksDbContext.SaveChanges();

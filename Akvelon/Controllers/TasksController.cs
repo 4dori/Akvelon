@@ -2,6 +2,7 @@
 using Akvelon.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Akvelon.Services;
 
 namespace Akvelon.Controllers
 {
@@ -110,43 +111,25 @@ namespace Akvelon.Controllers
 
             if (task != null)
             {
-                // After deleting task the bind has to destroyed 
                 var project = await projectDbContext.Projects.FindAsync(task.ProjectId);
 
-                // Check for two or more Tasks in Project
-                if (project.Tasks.Contains(", ")) 
+                List<string> ProjectTasks = ConverterService.StringToList(project.Tasks);
+                ProjectTasks.Remove(task.Name);
+
+                List<Guid> ProjectTasksIds = ConverterService.StringToListId(project.TasksIds);
+                ProjectTasksIds.Remove(task.Id);
+
+                if (!ProjectTasks.Any())
                 {
-                    List<string> ProjectTasks = project.Tasks.Split(", ").ToList(); //Tasks string splited and converted the the list type
-                    ProjectTasks.Remove(task.Name); // Destroying Project-task connection
-                    project.Tasks = ProjectTasks.Aggregate((a, b) => a + ", " + b);
-                    // Converting a string of tasks ids to the Guid list 
-                    List<Guid> ProjectTasksIds = new();
-                    foreach (string i in project.TasksIds.Split(", ").ToList())
-                    {
-                        Guid newGuid = Guid.Parse(i);
-                        ProjectTasksIds.Add(newGuid);
-
-                    }
-
-                    ProjectTasksIds.Remove(task.Id); // Destroying Project-task connection
-
-                    // Converting a Guid list to a string 
-                    List<string> list = new();
-                    foreach (Guid i in ProjectTasksIds)
-                    {
-                        string guid = i.ToString();
-                        list.Add(guid);
-
-                    }
-                    // appending chanes
-                    project.TasksIds = list.Aggregate((a, b) => a + ", " + b);
+                    project.Tasks = "";
+                    project.TasksIds = "";
                 }
-                else {
-                    // Last Task has to be deleted 
-                    project.Tasks = ""; 
-                    project.TasksIds = ""; 
-                }               
-
+                else
+                {
+                    project.Tasks = ConverterService.ListToString(ProjectTasks);
+                    project.TasksIds = ConverterService.ListIdToString(ProjectTasksIds);
+                }   
+                
                 await projectDbContext.SaveChangesAsync();
 
                 dbContext.Remove(task);
